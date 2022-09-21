@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const blogModel = require('../models/blogModel')
+const mongoose = require('mongoose')
+
 
 const authentication =  function (req, res, next) {
     try {
@@ -22,7 +24,11 @@ const authentication =  function (req, res, next) {
 const authorisation = async function (req, res, next) {
     try {
         let blogid = req.params.blogId
-        let blog = await blogModel.findById({ _id: blogid })
+
+        if(!mongoose.Types.ObjectId.isValid(blogid)) return res.status(400).send({status : false,message : "Invalid format of BlogId"})
+
+        let blog = await blogModel.findOne({_id : blogid})
+    
         if (blog) {
             if (blog.authorId != req.loggedInAuthorId) {
                 return res.status(403).send({ status: false, msg: 'unauthorised author' })

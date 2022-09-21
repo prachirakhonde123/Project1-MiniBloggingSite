@@ -1,6 +1,7 @@
 const blogModel = require("../models/blogModel");
 const authorModel = require("../models/authorModel")
 const jwt = require("jsonwebtoken")
+const mongoose = require("mongoose")
 
 const blogcreate = async function (req, res) {
     try {
@@ -44,12 +45,25 @@ const blogcreate = async function (req, res) {
 const getBlog = async function (req, res) {
     try {
         let data = req.query
+        const { authorId, category, tags, subcategory} = data
 
         //If query is not given we get all blogs having isDeleted : false and isPublished : true
         if (Object.keys(data) == 0) {
             let findBlogwithoutfilter = await blogModel.find({ $and: [{ isDeleted: false, isPublished: true }] })
             return res.status(200).send({ status:true,data: findBlogwithoutfilter })
         }
+
+        // In query giving random keys then
+        if(!(authorId || category || tags || subcategory)){
+            return res.status(400).send({status : false, message : "Please provide proper Query to filter"})
+        }
+
+        // Giving invalid authorId i.e string or other 
+        if(authorId){
+            if(!mongoose.Types.ObjectId.isValid(authorId))
+            return res.status(400).send({status : false, message : "Invalid Format of AuthorId!"})
+        }
+
         //If query is given blogs are filtered
         let findBlog = await blogModel.find({ $and: [{ isDeleted: false, isPublished: true }, data] })
 
@@ -74,12 +88,12 @@ const updateBlog = async function (req, res) {
         const blogid = req.params.blogId
         const blogupdate = req.body
 
-        // Blog Id is wrong
+        const {body, title, tags, subcategory} = blogupdate
+
         const validId = await blogModel.findById(blogid)
-        if (!validId) {
-            return res.status(404).send({ status:false,msg: "No such a Blog" })
+        
         // blog already deleted
-        } if (validId) {
+         if (validId) {
             if (validId.isDeleted === true) {
                 return res.status(404).send({ status:false,msg: "Blog does not exist. Already Deleted." })
             }
@@ -88,6 +102,11 @@ const updateBlog = async function (req, res) {
         if (Object.keys(blogupdate).length == 0) {
             return res.status(400).send({ status: false, msg: "Data must be given" })
         }
+
+        if(!(body || title || tags || subcategory)){
+            return res.status(400).send({status : false, message : "Providing invalid Keys to update blog!"})
+        }
+
         // updation
         const updateBlog = await blogModel.findOneAndUpdate({ _id: blogid, isDeleted: false },
             {
@@ -97,7 +116,9 @@ const updateBlog = async function (req, res) {
             { new: true });
          res.status(200).send({status: true, message : "Blog updated Successfully", data : updateBlog })
 
-    } catch (err) {
+    } 
+    
+    catch (err) {
         res.status(500).send({ status:false,msg:"server error", error: err.message })
     }
 }
@@ -110,11 +131,6 @@ const deleteblog = async function (req, res) {
     try {
         const blogid = req.params.blogId;
         const blog = await blogModel.findById(blogid)
-
-        //Blog Id is wrong
-        if (!blog) {
-            return res.status(404).send({ status: false, msg: "No such a Blog" })
-        }
 
         // Blog is already deleted
         if (blog.isDeleted === true) {
@@ -136,11 +152,23 @@ const deleteblog = async function (req, res) {
 const deleteByQuery = async function (req, res) {
     try {
         let qwery = req.query
+        const {authorId, tags, subcategory, isPublished, title} = qwery
         
         // If query is empty
         if (Object.keys(qwery).length === 0) {
             return res.status(400).send({status:false, msg: "query not found" })
         }
+
+        if(!(authorId || tags || subcategory || isPublished || title)){
+            return res.status(400).send({status : false, message : "Providing Invalid Query to delete Blog."})
+        }
+
+        if(authorId){
+            if(!mongoose.Types.ObjectId.isValid(authorId))
+            return res.status(400).send({status : false, message : "Invalid format of authorId!"})
+        }
+
+        
         
         // Added filter isDeleted = false
         let query = { isDeleted: false, ...qwery }
