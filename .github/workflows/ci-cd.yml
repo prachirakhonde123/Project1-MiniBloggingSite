@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - project1/miniBlog  # Trigger workflow on push to project1/miniBlog branch
+  pull_request:
+    branches:
+      - project1/miniBlog  # Trigger workflow on pull requests to project1/miniBlog branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]  # Specify Node.js versions
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}  # Use matrix Node.js version
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: project1
+
+    - name: Build the project
+      run: npm run build
+      working-directory: project1
+
+ 
