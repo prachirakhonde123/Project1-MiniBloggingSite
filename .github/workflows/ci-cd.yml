@@ -27,10 +27,9 @@ jobs:
 
     - name: Install dependencies
       run: npm install
-      working-directory: ./project1
+    
 
     - name: Build the project
       run: npm run build
-      working-directory: ./project1
 
  
